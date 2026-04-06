@@ -1,5 +1,6 @@
 import express from 'express';
 import TelegramBot from "node-telegram-bot-api";
+import fetch from 'node-fetch'; // Make sure to install node-fetch if not already
 
 // ⚠️ PUT YOUR NEW TOKEN HERE
 const token = "8399641264:AAHTYqrZl_bszFJyTP3pQAmnDB0WdiZuoXM";
@@ -8,7 +9,6 @@ const bot = new TelegramBot(token, { polling: true });
 
 // Create Express server for Render's health checks
 const app = express();
-// FIXED: Use PORT from environment variable, fallback to 10000
 const port = process.env.PORT || 10000;
 
 // Health check endpoint for Render
@@ -24,7 +24,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Start Express server - MUST listen on all interfaces
+// Start Express server
 app.listen(port, '0.0.0.0', () => {
   console.log(`✅ Health check server running on port ${port}`);
 });
@@ -41,11 +41,30 @@ bot.on("message", async (msg) => {
   }
 
   try {
-    // Using 'text' not 'uid'
     const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${text}&server_name=BD`;
+    
+    console.log(`Fetching URL: ${url}`); // Debug log
 
-    const res = await fetch(url);
-    const data = await res.json();
+    // Add proper headers to mimic a browser request
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache'
+      }
+    });
+
+    // Check if response is ok
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("API Response:", data); // Debug log
 
     const nickname = data?.PlayerNickname || "Unknown";
     const before = data?.LikesbeforeCommand || 0;
@@ -63,14 +82,25 @@ bot.on("message", async (msg) => {
 ⚡️ Likes (After): ${after}
 🤖 API Likes: ${apiLikes}
 
-📌 Status: ${status}
+📌 Status: ${status === 2 ? "✅ Success" : status === 1 ? "⚠️ Pending" : "❌ Failed"}
 `;
 
     await bot.sendMessage(chatId, message);
 
   } catch (err) {
-    console.error("Error:", err);
-    bot.sendMessage(chatId, "❌ Failed to fetch data. Please try again later.");
+    console.error("Error details:", err);
+    
+    // Send more detailed error message for debugging
+    let errorMessage = "❌ Failed to fetch data. ";
+    if (err.message.includes('fetch')) {
+      errorMessage += "Network error - please try again later.";
+    } else if (err.message.includes('JSON')) {
+      errorMessage += "Invalid response from API.";
+    } else {
+      errorMessage += err.message;
+    }
+    
+    bot.sendMessage(chatId, errorMessage);
   }
 });
 
