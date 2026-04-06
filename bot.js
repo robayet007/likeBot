@@ -1,3 +1,4 @@
+import express from 'express';
 import TelegramBot from "node-telegram-bot-api";
 
 // ⚠️ PUT YOUR NEW TOKEN HERE
@@ -5,18 +6,42 @@ const token = "8399641264:AAHTYqrZl_bszFJyTP3pQAmnDB0WdiZuoXM";
 
 const bot = new TelegramBot(token, { polling: true });
 
+// Create Express server for Render's health checks
+const app = express();
+const port = process.env.PORT || 10000;
+
+// Health check endpoint for Render
+app.get('/', (req, res) => {
+  res.status(200).send('🤖 Telegram bot is running!');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'online', 
+    bot: 'polling',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Start Express server
+app.listen(port, '0.0.0.0', () => {
+  console.log(`✅ Health check server running on port ${port}`);
+});
+
+// Your bot code (fixed)
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
   // check if user sent UID (number only)
   if (!/^\d+$/.test(text)) {
-    bot.sendMessage(chatId, "❌ Please send a valid UID");
+    bot.sendMessage(chatId, "❌ Please send a valid UID (numbers only)");
     return;
   }
 
   try {
-    const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${uid}&server_name=BD`;
+    // FIXED: You had 'uid' undefined, changed to 'text'
+    const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${text}&server_name=BD`;
 
     const res = await fetch(url);
     const data = await res.json();
@@ -44,7 +69,7 @@ bot.on("message", async (msg) => {
 
   } catch (err) {
     console.error(err);
-    bot.sendMessage(chatId, "❌ Failed to fetch data");
+    bot.sendMessage(chatId, "❌ Failed to fetch data. Please try again later.");
   }
 });
 
