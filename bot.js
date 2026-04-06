@@ -8,6 +8,7 @@ const bot = new TelegramBot(token, { polling: true });
 
 // Create Express server for Render's health checks
 const app = express();
+// FIXED: Use PORT from environment variable, fallback to 10000
 const port = process.env.PORT || 10000;
 
 // Health check endpoint for Render
@@ -23,24 +24,24 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Start Express server
+// Start Express server - MUST listen on all interfaces
 app.listen(port, '0.0.0.0', () => {
   console.log(`✅ Health check server running on port ${port}`);
 });
 
-// Your bot code (fixed)
+// Your bot code
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  // check if user sent UID (number only)
-  if (!/^\d+$/.test(text)) {
+  // Check if user sent UID (number only)
+  if (!text || !/^\d+$/.test(text)) {
     bot.sendMessage(chatId, "❌ Please send a valid UID (numbers only)");
     return;
   }
 
   try {
-    // FIXED: You had 'uid' undefined, changed to 'text'
+    // Using 'text' not 'uid'
     const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${text}&server_name=BD`;
 
     const res = await fetch(url);
@@ -65,10 +66,10 @@ bot.on("message", async (msg) => {
 📌 Status: ${status}
 `;
 
-    bot.sendMessage(chatId, message);
+    await bot.sendMessage(chatId, message);
 
   } catch (err) {
-    console.error(err);
+    console.error("Error:", err);
     bot.sendMessage(chatId, "❌ Failed to fetch data. Please try again later.");
   }
 });
