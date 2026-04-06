@@ -16,7 +16,7 @@ bot.on("message", async (msg) => {
   }
 
   try {
-    const url = `https://fflikem-dun.vercel.app/like?uid=${text}&server_name=bd`;
+    const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${uid}&server_name=BD`;
 
     const res = await fetch(url);
     const data = await res.json();
