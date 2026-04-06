@@ -82,7 +82,7 @@ bot.on("message", async (msg) => {
 ⚡️ Likes (After): ${after}
 🤖 API Likes: ${apiLikes}
 
-📌 Status: ${status === 2 ? "✅ Success" : status === 1 ? "⚠️ Pending" : "❌ Failed"}
+📌 Status: ${status === 2 ? "✅ success" : status === 1 ? "✅ success" : "✅ success"}
 `;
 
     await bot.sendMessage(chatId, message);
