@@ -1,8 +1,7 @@
 import express from 'express';
 import TelegramBot from "node-telegram-bot-api";
-import fetch from 'node-fetch'; // Make sure to install node-fetch if not already
 
-// ⚠️ PUT YOUR NEW TOKEN HERE
+// ⚠️ YOUR TOKEN
 const token = "8399641264:AAHTYqrZl_bszFJyTP3pQAmnDB0WdiZuoXM";
 
 const bot = new TelegramBot(token, { polling: true });
@@ -32,38 +31,39 @@ app.listen(port, '0.0.0.0', () => {
 // Your bot code
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
-  const text = msg.text;
+  let text = msg.text;
 
-  // Check if user sent UID (number only)
+  // Remove any whitespace and validate
+  if (text) {
+    text = text.trim();
+  }
+
+  // Check if user sent UID (numbers only) - but keep as string
   if (!text || !/^\d+$/.test(text)) {
     bot.sendMessage(chatId, "❌ Please send a valid UID (numbers only)");
     return;
   }
 
   try {
-    const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${text}&server_name=BD`;
+    // IMPORTANT: Keep UID as string, don't convert to number
+    const uid = text; // This is already a string
+    const url = `https://free-fire-like-api-bd12.vercel.app/like?uid=${uid}&server_name=BD`;
     
-    console.log(`Fetching URL: ${url}`); // Debug log
+    console.log(`Fetching UID as string: ${uid}`); // Debug log
+    console.log(`URL: ${url}`); // Debug log
 
-    // Add proper headers to mimic a browser request
-    const response = await fetch(url, {
-      method: 'GET',
+    // Add headers to avoid blocking
+    const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Cache-Control': 'no-cache'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
     });
-
-    // Check if response is ok
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
-
-    const data = await response.json();
+    
+    const data = await res.json();
     console.log("API Response:", data); // Debug log
 
     const nickname = data?.PlayerNickname || "Unknown";
@@ -76,7 +76,7 @@ bot.on("message", async (msg) => {
 📊 Player Info
 
 👤 Nickname: ${nickname}
-🆔 UID: ${text}
+🆔 UID: ${uid}
 
 👍 Likes (Before): ${before}
 ⚡️ Likes (After): ${after}
@@ -88,19 +88,8 @@ bot.on("message", async (msg) => {
     await bot.sendMessage(chatId, message);
 
   } catch (err) {
-    console.error("Error details:", err);
-    
-    // Send more detailed error message for debugging
-    let errorMessage = "❌ Failed to fetch data. ";
-    if (err.message.includes('fetch')) {
-      errorMessage += "Network error - please try again later.";
-    } else if (err.message.includes('JSON')) {
-      errorMessage += "Invalid response from API.";
-    } else {
-      errorMessage += err.message;
-    }
-    
-    bot.sendMessage(chatId, errorMessage);
+    console.error("Error:", err);
+    bot.sendMessage(chatId, "❌ Failed to fetch data. Please try again later.");
   }
 });
 
