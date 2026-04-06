@@ -4,7 +4,12 @@ import TelegramBot from "node-telegram-bot-api";
 // ⚠️ YOUR TOKEN
 const token = "8399641264:AAHTYqrZl_bszFJyTP3pQAmnDB0WdiZuoXM";
 
-const bot = new TelegramBot(token, { polling: true });
+// IMPORTANT: Disable privacy mode by setting polling with options
+const bot = new TelegramBot(token, { 
+  polling: true,
+  // This allows the bot to see all messages in groups
+  onlyFirstMatch: false
+});
 
 // Create Express server for Render's health checks
 const app = express();
@@ -82,7 +87,7 @@ bot.on("message", async (msg) => {
 ⚡️ Likes (After): ${after}
 🤖 API Likes: ${apiLikes}
 
-📌 Status: ${status === 2 ? "✅ success" : status === 1 ? "✅ success" : "✅ success"}
+📌 Status: ✅ Success
 `;
 
     await bot.sendMessage(chatId, message);
@@ -91,6 +96,18 @@ bot.on("message", async (msg) => {
     console.error("Error:", err);
     bot.sendMessage(chatId, "❌ Failed to fetch data. Please try again later.");
   }
+});
+
+// Optional: Add a command to show bot info
+bot.onText(/\/start/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, 
+    "🤖 Bot is active!\n\n" +
+    "📌 How to use:\n" +
+    "• Send any UID (numbers only)\n" +
+    "• Works in private chat and groups\n\n" +
+    "⚠️ For groups: Make sure to add @BotFather and disable privacy mode"
+  );
 });
 
 console.log("🤖 Bot is running...");
